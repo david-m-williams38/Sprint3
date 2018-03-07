@@ -123,15 +123,16 @@ public class TM {
 
 
 	public void summaryFull() {
-		for (String individual : tmModel.taskNames()) {
+		Set<String> NOMBRES = tmModel.taskNames();
+		Set<String> ElSizes = tmModel.taskSizes();
+		for (String individual : NOMBRES) {
 			summary( individual );
 		}
 
-		for (String single : tmModel.taskSizes()) {
+		for (String single : ElSizes) {
 			Set<String> strset = tmModel.taskNamesForSize(single);
-			
-			if (strset.size() >= 2) {
-				System.out.println("Size: " + single + "\n Min Time: " + tmModel.minTimeForSize(single)
+			if (strset.size() > 1) {
+				System.out.println("Size: " + single + "Tasks: " + strset + "\n Min Time: " + tmModel.minTimeForSize(single)
 								   + "\n Avg Time: " + tmModel.avgTimeForSize(single)
 								   + "\n Max Time: " + tmModel.maxTimeForSize(single) + "\n");
 			}

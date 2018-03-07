@@ -25,21 +25,56 @@ import java.time.temporal.ChronoUnit;
 
 class TaskLogEntry{
 
-	LocalDateTime timeRN;
 	String cmd;
 	String data;
 	String desc;
+	String data2;
+	LocalDateTime timeRN;
 
 }
 
 // The whole program relies on this class to run appropriately
 public class TMModel implements ITMModel {
 
-	LinkedList<TaskLogEntry> LineL;
+	private TreeSet<String> nombres;
+	private Log log;
+	private LocalDateTime timeRN;
+	private LinkedList<TaskLogEntry> LineL;
+	private ArrayList<String> AL;
+	private TreeSet<String> variations;
+	private long TT;
 
 	// Initialize Size, for use in declaring tasks as L, XS, S, M, and so on...
 	// set the String size to "" so it is initialized and compiles/runs accordingly
 	public String Size = "";
+
+
+
+	
+	
+	public TMModel() {
+		try {
+			log = new Log();
+			TT = 0;
+			timeRN = LocalDateTime.now();
+			variations = new TreeSet<String>();
+			nombres = new TreeSet<String>();
+			LineL = log.readFile();
+			for(TaskLogEntry enterohero : LineL) {
+				nombres.add(enterohero.data);
+				if (enterohero.cmd.equals("SIZE"))
+					variations.add(enterohero.desc);
+			}
+		}
+		catch (IOException err) {
+			System.err.println("ERROR: Log File is unreadable");
+		}
+		catch (NullPointerException err) {
+			System.err.println("ERROR: Communication between the application and the log file is faulty");
+		}
+	}
+
+
 
 
 	// This is one of the TWO cmdSummary methods, this one only handles the whole output of the log file
@@ -76,11 +111,6 @@ public class TMModel implements ITMModel {
 		log.readFile();
 
 	}
-	
-	
-	
-	
-	
 
 	// This will handle the other method of cmdSummary
 	// It takes the data of the log file, a well as the Task that is requested to be summarized
@@ -101,14 +131,168 @@ public class TMModel implements ITMModel {
 		return sumTask.totTime;
 		
 	}
-	
+
+
+
+
+	@Override
+	public boolean startTask(String name) {
+		try {
+			log.writeLine(timeRN + "_" + name + "_START");
+		} catch (Exception err) {
+			System.err.println("ERROR: Could not write to log file\n");
+			return false;
+		}
+		return true;
+	}
+
+
+
+	@Override
+	public boolean stopTask(String name) {
+		try {
+			log.writeLine(timeRN + "_" + name + "_STOP");
+		} catch (Exception err) {
+			System.err.println("ERROR: Could not write to log file\n");
+			return false;
+		}
+		return true;
+	}
+
+
+	@Override
+	public boolean describeTask(String name, String desc) {
+		try {
+			log.writeLine(timeRN + "_" + name + "_DESCRIBE_" + desc);
+		} catch (Exception err) {
+			System.err.println("ERROR: Could not write to log file\n");
+			return false;
+		}
+		return true;
+	}
+
+
+	@Override
+	public boolean sizeTask(String name, String size) {
+		try {
+			log.writeLine(timeRN + "_" + name + "_SIZE_" + size);
+		} catch (Exception err) {
+			System.err.println("ERROR: Could not write to log file\n");
+			return false;
+		}
+		return true;
+	}
+
+
+	//TODO
+	@Override
+	public boolean deleteTask(String name) {
+		System.out.println("TODO: deleteTask(String name) METHOD");
+		return false;
+	}
+
+
+	//TODO
+	@Override
+	public boolean renameTask(String old, String new) {
+		System.out.println("TODO: renameTask(String old, String new) METHOD");
+		return false;
+	}
+
+
+	@Override
+	public String taskElapsedTime(String name) {
+		Task task = new Task(name, LineL);
+		return task.totTime();
+	}
+
+
+	@Override
+	public String taskSize(String name) {
+		Task task = new Task(name, LineL);
+		return task.SSize();
+	}
+
+
+	@Override
+	public String taskDescription(String name) {
+		Task task = new Task(name, LineL);
+		return task.descript();
+	}
+
+
+	@Override
+	public String minTimeForSize(String size) {
+		long minimumT = Long.MAX_VALUE;
+		for (String tasks : nombres ) {
+			Task task = new Task(tasks, LineL);
+			if (task.SS.equals(size)) {
+				if (task.totTime < minimumT) {
+					minimumT = task.totTime;
+				}
+			}
+		}
+		return TimeUtil.toElapsedTime(minimumT);
+	}
+
+
+	//TODO
+	@Override
+	public String maxTimeForSize(String size) {
+		return "TODO: maxTimeForSize(String size) METHOD";
+	}
+
+
+	//TODO
+	@Override
+	public String avgTimeForSize(String size) {
+		return "TODO: avgTimeForSize(String size) METHOD";
+	}
+
+
+	@Override
+	public Set<String> taskNamesForSize(String size) {
+		Set<String> taskNamesForSize = new TreeSet<String>();
+		for (String iTask : nombres) {
+			Task task = new Task(iTask, LineL);
+			if(task.SS.equals(size)) {
+				taskNamesForSize.add(iTask);
+			}
+		}
+		return taskNamesForSize;
+	}
+
+
+	//TODO
+	@Override
+	public String elapsedTimeForAllTasks() {
+		return "TODO: elapsedTimeForAllTasks() METHOD";
+	}
+
+
+	@Override
+	public Set<String> taskNames() {
+		return nombres;
+	}
+
+
+	@Override
+	public Set<String> taskSizes() {
+		return variations;
+	}
 
 
 
 
 
 
-	
+
+
+
+
+
+
+
 
 
 
@@ -117,6 +301,8 @@ public class TMModel implements ITMModel {
 
 
 	static class TimeUtil {
+
+
 
 		static String toElapsedTime(long totSecs) {
 
@@ -128,19 +314,23 @@ public class TMModel implements ITMModel {
 			return timeNow;
 
 		}
+
 	}
 
 	class Task {
 
 		private String name = "";
-		private String desc = "";
+		private StringBuilder desc = new StringBuilder("");
 		private String timeAhora = "";
 		private long totTime = 0;
+		private String SS;
 
 		public Task(String name, LinkedList<TaskLogEntry> entries) {
 			this.name = name;
 			//WHY IS THIS BEING WRITTEN AS THE GODDAMN DESCRIPTION
-			this.desc = "";
+			//REDACTED
+			//this.desc = "";
+			//REDACTED
 			LocalDateTime lastStart = null;
 			long timeOverall = 0;
 			for(TaskLogEntry entry : entries) {
@@ -156,7 +346,16 @@ public class TMModel implements ITMModel {
 							lastStart = null;
 							break;
 						case "DESCRIBE":
-							desc += " " + entry.desc;
+							if (desc.toString().equals(""))
+								desc.append(" " + entry.desc);
+							else
+								desc.append("\n" + entry.desc);
+							if (entry.data2 != null)
+								SS = entry.data2;
+							break;
+						case "SIZE":
+							SS = entry.desc;
+								
 					}
 				}
 			}
@@ -174,6 +373,18 @@ public class TMModel implements ITMModel {
 				long dur = ChronoUnit.SECONDS.between(start, stop);
 				return dur;
 
+		}
+
+		public String totTime() {
+			return this.timeAhora;
+		}
+
+		public String SSize() {
+			return this.SS;
+		}
+
+		public String descript() {
+			return this.desc.toString();
 		}
 
 	}
@@ -230,6 +441,7 @@ class Log{
 
 	LinkedList<TaskLogEntry> readFile() throws IOException {
 
+		int stringTokCount = 0;
 		LinkedList<TaskLogEntry> LineL = new LinkedList<TaskLogEntry>();
 			
 		File logF = new File("TM.log");
@@ -240,16 +452,17 @@ class Log{
 
 			TaskLogEntry entry = new TaskLogEntry();
 			thisLine = file.nextLine();
-			StringTokenizer stringTok = new StringTokenizer(thisLine, " ");
+			StringTokenizer stringTok = new StringTokenizer(thisLine, "_");
 			entry.timeRN = LocalDateTime.parse(stringTok.nextToken());
 			entry.data = stringTok.nextToken();
 			entry.cmd = stringTok.nextToken();
 
-			if(stringTok.hasMoreTokens())
+			if(stringTok.hasMoreTokens()) {
 				entry.desc = stringTok.nextToken();
-				while(stringTok.hasMoreTokens()) {
-					entry.desc += (" " + stringTok.nextToken());
-				}
+			}
+			if(stringTok.hasMoreTokens()) {
+				entry.data2 = stringTok.nextToken();
+			}
 
 			LineL.add(entry);
 
