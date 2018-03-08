@@ -20,6 +20,8 @@ import java.io.*;
 import java.time.*;
 import java.util.*;
 import java.time.temporal.ChronoUnit;
+import java.nio.file.*;
+import java.nio.charset.StandardCharsets;
 
 
 
@@ -187,16 +189,43 @@ public class TMModel implements ITMModel {
 	//TODO
 	@Override
 	public boolean deleteTask(String name) {
-		System.out.println("TODO: deleteTask(String name) METHOD");
-		return false;
+		List<String> newLines = new ArrayList<>();
+				try {
+					for (String line : Files.readAllLines(Paths.get("TM.log"), StandardCharsets.UTF_8)) {
+					    if (line.contains("_"+ name + "_")) {
+					       newLines.add(line.replace("_"+ name + "_", "_#REDACTED-Still-Able-To-Revert#_"));
+					    } else {
+					       newLines.add(line);
+					    }
+					}
+					Files.write(Paths.get("TM.log"), newLines, StandardCharsets.UTF_8);
+					return true;
+				} catch (IOException e) {
+					e.printStackTrace();
+					return false;
+				}	
+
 	}
 
 
-	//TODO
+
 	@Override
-	public boolean renameTask(String old, String new) {
-		System.out.println("TODO: renameTask(String old, String new) METHOD");
-		return false;
+	public boolean renameTask(String old, String New) {
+		ArrayList<String> LineList = new ArrayList<>();
+		// Supplied and Modified from Stack Overflow
+		try {
+			for (String line : Files.readAllLines(Paths.get("TM.log"), StandardCharsets.UTF_8)) {
+				if(line.contains("_" + old + "_"))
+					LineList.add(line.replace("_" + old + "_", "_" + New + "_"));
+				else
+					LineList.add(line);
+			}
+			Files.write(Paths.get("TM.log"), LineList, StandardCharsets.UTF_8);
+		} catch (Exception err) {
+			System.err.println("ERROR: Problem Occurred During Task Renaming Method");
+			return false;
+		}
+		return true;
 	}
 
 
@@ -236,17 +265,33 @@ public class TMModel implements ITMModel {
 	}
 
 
-	//TODO
 	@Override
 	public String maxTimeForSize(String size) {
-		return "TODO: maxTimeForSize(String size) METHOD";
+		long maximumTime = 0;
+		for (String nombre : nombres) {
+			Task task = new Task(nombre, LineL);
+			if (task.SS.equals(size) && task.totTime > maximumTime)
+				maximumTime = task.totTime;
+		}
+		return TimeUtil.toElapsedTime(maximumTime);
+
 	}
 
 
-	//TODO
+	
 	@Override
 	public String avgTimeForSize(String size) {
-		return "TODO: avgTimeForSize(String size) METHOD";
+		long totalT = 0;
+		int i = 0;
+		for ( String nombre : nombres ) {
+			Task task = new Task(nombre, LineL);
+			if (task.SS.equals(size)) {
+				totalT = totalT + task.totTime;
+				i++;
+			}
+		}
+		totalT = totalT/i;
+		return TimeUtil.toElapsedTime(totalT);
 	}
 
 
@@ -263,11 +308,17 @@ public class TMModel implements ITMModel {
 	}
 
 
-	//TODO
+	
 	@Override
 	public String elapsedTimeForAllTasks() {
-		return "TODO: elapsedTimeForAllTasks() METHOD";
+		long totalTime = 0;
+		for (String tasks : taskNames() ) {
+			Task task = new Task(tasks, LineL);
+			totalTime += task.totTime;
+		}
+		return TimeUtil.toElapsedTime(totalTime);
 	}
+
 
 
 	@Override
@@ -280,23 +331,6 @@ public class TMModel implements ITMModel {
 	public Set<String> taskSizes() {
 		return variations;
 	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -323,8 +357,11 @@ public class TMModel implements ITMModel {
 		private StringBuilder desc = new StringBuilder("");
 		private String timeAhora = "";
 		private long totTime = 0;
-		private String SS;
+		private String SS = "UNKNOWN";
 
+
+		// Code helps my TMModel, as my code was not simplified by removing this as I used this
+		//		in order to keep my Task() constructor, yet keep it useful if needed by my team
 		public Task(String name, LinkedList<TaskLogEntry> entries) {
 			this.name = name;
 			//WHY IS THIS BEING WRITTEN AS THE GODDAMN DESCRIPTION
@@ -349,13 +386,12 @@ public class TMModel implements ITMModel {
 							if (desc.toString().equals(""))
 								desc.append(" " + entry.desc);
 							else
-								desc.append("\n" + entry.desc);
+								desc.append("\n\t\t" + entry.desc);
 							if (entry.data2 != null)
 								SS = entry.data2;
 							break;
 						case "SIZE":
 							SS = entry.desc;
-								
 					}
 				}
 			}

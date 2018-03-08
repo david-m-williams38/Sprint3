@@ -115,6 +115,11 @@ public class TM {
 					tmModel.renameTask(args[1], args[2]);
 				}
 				break;
+			case "SIZE":
+				if (args.length == 3) {
+					tmModel.sizeTask(args[1], args[2]);
+				}
+				break;
 			default:
 				Usage();
 		}
@@ -131,8 +136,9 @@ public class TM {
 
 		for (String single : ElSizes) {
 			Set<String> strset = tmModel.taskNamesForSize(single);
-			if (strset.size() > 1) {
-				System.out.println("Size: " + single + "Tasks: " + strset + "\n Min Time: " + tmModel.minTimeForSize(single)
+
+			if (strset.size() >= 1) {
+				System.out.println("Size: " + single + " Tasks: " + strset + "\n Min Time: " + tmModel.minTimeForSize(single)
 								   + "\n Avg Time: " + tmModel.avgTimeForSize(single)
 								   + "\n Max Time: " + tmModel.maxTimeForSize(single) + "\n");
 			}
